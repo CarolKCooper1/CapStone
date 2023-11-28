@@ -37,7 +37,7 @@ const int PIXELCOUNT = 10;
 const int LEDDELAY = 5000;
 unsigned int last, lastTime;
 int subValue,pubValue;
-
+unsigned int currentTime, timerStart;
 const int BUTTON=D3;// button
 bool buttonState;
 Button myButton(BUTTON);
@@ -88,11 +88,12 @@ if(myButton.isClicked()){//button toggle on off
 if(buttonState){
     for(i=0; i<5; i++){
       randomPixel();
-      delay(LEDDELAY); 
       Serial.printf("BUTTON on %i\n", BUTTON);
+      delay(LEDDELAY); 
     }
       pixel.clear();
       pixel.show();
+      
 }
 else{
     pixel.clear();
@@ -105,8 +106,7 @@ Adafruit_MQTT_Subscribe *subscription;
       subValue = atoi((char *)buttonFeed.lastread);
       Serial.printf("Button Subscription %i \n", subValue);
     }
-
-  if(subValue==1){
+    if(subValue==1){
       for(i=0; i<5; i++){
         randomPixel();
         delay(LEDDELAY); 
@@ -120,7 +120,6 @@ Adafruit_MQTT_Subscribe *subscription;
     pixel.show();
   }
 }
-
 }
 // Function to connect and reconnect as necessary to the MQTT server.
 // Should be called in the loop function and it will take care if connecting.
