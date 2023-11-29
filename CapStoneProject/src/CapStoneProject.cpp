@@ -82,10 +82,10 @@ void loop() {
   MQTT_connect();
   MQTT_ping();
 
-if(myButton.isClicked()){//button toggle on off
-   buttonState=!buttonState;
-}
-if(buttonState){
+if(myButton.isPressed()){//button toggle on off
+//    buttonState=!buttonState;
+// }
+// if(buttonState){
     for(i=0; i<5; i++){
       randomPixel();
       Serial.printf("BUTTON on %i\n", BUTTON);
@@ -95,10 +95,11 @@ if(buttonState){
       pixel.show();
       
 }
-else{
-    pixel.clear();
-    pixel.show();
-}
+// if(!buttonState){
+//     pixel.clear();
+//     pixel.show();
+//     Serial.printf("BUTTON off %i\n", BUTTON);
+// }
 
 Adafruit_MQTT_Subscribe *subscription;
   while ((subscription = mqtt.readSubscription(10000))) {
