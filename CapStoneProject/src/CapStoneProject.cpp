@@ -28,6 +28,7 @@ Adafruit_MQTT_SPARK mqtt(&TheClient,AIO_SERVER,AIO_SERVERPORT,AIO_USERNAME,AIO_K
 // Setup Feeds to publish or subscribe 
 // Notice MQTT paths for AIO follow the form: <username>/feeds/<feedname> 
 Adafruit_MQTT_Subscribe buttonFeed = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/buttononoff"); 
+Adafruit_MQTT_Subscribe scentFeed = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/scentbutton"); 
 // Let Device OS manage the connection to the Particle Cloud
 
 int start;
@@ -36,11 +37,17 @@ int i;
 const int PIXELCOUNT = 10;
 const int LEDDELAY = 5000;
 unsigned int last, lastTime;
-int subValue,pubValue;
+int subValue,subValue1;
 unsigned int currentTime, timerStart;
 const int BUTTON=D3;// button
+const int BUTTON1=D6;
 bool buttonState;
+const int SERVPIN = D13;
+const int SERVPIN1 = D14;
 Button myButton(BUTTON);
+Button myButton1(BUTTON1);
+Servo myServo;
+Servo myServo1;
 
 Adafruit_NeoPixel pixel(PIXELCOUNT, SPI1, WS2812B);
 
@@ -75,6 +82,12 @@ void setup() {
   Serial.printf("\n\n");
 
   mqtt.subscribe(&buttonFeed);
+  mqtt.subscribe(&scentFeed);
+
+  myServo.attach(SERVPIN);
+  myServo1.attach(SERVPIN1);
+  pinMode(SERVPIN, INPUT_PULLDOWN);
+  pinMode(SERVPIN1, INPUT_PULLDOWN);
 }
 
 // loop() runs over and over again, as quickly as it can execute.
@@ -82,31 +95,31 @@ void loop() {
   MQTT_connect();
   MQTT_ping();
 
-if(myButton.isPressed()){//button toggle on off
-//    buttonState=!buttonState;
-// }
-// if(buttonState){
+if(myButton.isPressed()){//turn on
     for(i=0; i<5; i++){
       randomPixel();
       Serial.printf("BUTTON on %i\n", BUTTON);
-      delay(LEDDELAY); 
+      delay(LEDDELAY); //Brian approved the use of this delay
     }
       pixel.clear();
-      pixel.show();
-      
+      pixel.show();     
 }
-// if(!buttonState){
-//     pixel.clear();
-//     pixel.show();
-//     Serial.printf("BUTTON off %i\n", BUTTON);
-// }
-
+if (myButton1.isPressed()){
+      myServo.write(180);
+      delay(1000);
+      myServo.write(0);
+}
 Adafruit_MQTT_Subscribe *subscription;
   while ((subscription = mqtt.readSubscription(10000))) {
     if (subscription == &buttonFeed) {
       subValue = atoi((char *)buttonFeed.lastread);
       Serial.printf("Button Subscription %i \n", subValue);
     }
+    if (subscription == &scentFeed) {
+      subValue1 = atoi((char *)scentFeed.lastread);
+      Serial.printf("scent Subscription %i \n", subValue1);
+    }
+    
     if(subValue==1){
       for(i=0; i<5; i++){
         randomPixel();
@@ -114,13 +127,21 @@ Adafruit_MQTT_Subscribe *subscription;
       }
       pixel.clear();
       pixel.show();
-
+    }
+    else{
+      pixel.clear();
+      pixel.show();
+    }
+    if(subValue1==2){
+       myServo.write(180);
+       delay(1000);
+       myServo.write(0);
+      //  delay(1000);
+      //  myServo1.write(180);
+      //  delay(1000);
+      //  myServo1.write(25);
+    }
   }
-  else{
-    pixel.clear();
-    pixel.show();
-  }
-}
 }
 // Function to connect and reconnect as necessary to the MQTT server.
 // Should be called in the loop function and it will take care if connecting.
@@ -161,9 +182,9 @@ bool MQTT_ping() {
 void randomPixel(){
   int whichPix;
   int randColor;
-    whichPix=random(10);
-    randColor=random(7);
-    pixel.setPixelColor(whichPix, rainbow[randColor]);
-    pixel.show();
-    pixel.clear();
+      whichPix=random(10);
+      randColor=random(7);
+      pixel.setPixelColor(whichPix, rainbow[randColor]);
+      pixel.show();
+      pixel.clear();
   } 
