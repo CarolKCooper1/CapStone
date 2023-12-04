@@ -34,20 +34,20 @@ Adafruit_MQTT_Subscribe scentFeed = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME 
 int start;
 int end;
 int i;
+int x;
 const int PIXELCOUNT = 10;
 const int LEDDELAY = 5000;
-unsigned int last, lastTime;
 int subValue,subValue1;
-unsigned int currentTime, timerStart;
-const int BUTTON=D3;// button
-const int BUTTON1=D6;
+const int BUTTON=D6;// button
+const int BUTTON1=D5;
 bool buttonState;
 const int SERVPIN = D13;
-const int SERVPIN1 = D14;
-Button myButton(BUTTON);
-Button myButton1(BUTTON1);
+int inputValue, inputValue1;
+// Button myButton(BUTTON);
+// Button myButton1(BUTTON1);
 Servo myServo;
-Servo myServo1;
+IoTTimer scentTimer;
+IoTTimer scentTimer1, scentTimer2;
 
 Adafruit_NeoPixel pixel(PIXELCOUNT, SPI1, WS2812B);
 
@@ -69,7 +69,7 @@ SerialLogHandler logHandler(LOG_LEVEL_INFO);
 void setup() {
   Serial.begin(9600);
   waitFor(Serial.isConnected,10000);
-
+//start pixels
   pixel.begin();
   pixel.setBrightness(255);
   pixel.show();
@@ -83,11 +83,12 @@ void setup() {
 
   mqtt.subscribe(&buttonFeed);
   mqtt.subscribe(&scentFeed);
-
+//servo
   myServo.attach(SERVPIN);
-  myServo1.attach(SERVPIN1);
   pinMode(SERVPIN, INPUT_PULLDOWN);
-  pinMode(SERVPIN1, INPUT_PULLDOWN);
+  //Buttons
+  pinMode(BUTTON,INPUT);
+  pinMode(BUTTON1,INPUT);
 }
 
 // loop() runs over and over again, as quickly as it can execute.
@@ -95,7 +96,10 @@ void loop() {
   MQTT_connect();
   MQTT_ping();
 
-if(myButton.isPressed()){//turn on
+  inputValue=digitalRead(BUTTON);
+  inputValue1=digitalRead(BUTTON1);
+
+if(inputValue==1){//turn on lights
     for(i=0; i<5; i++){
       randomPixel();
       Serial.printf("BUTTON on %i\n", BUTTON);
@@ -104,22 +108,44 @@ if(myButton.isPressed()){//turn on
       pixel.clear();
       pixel.show();     
 }
-if (myButton1.isPressed()){
-      myServo.write(180);
-      delay(1000);
-      myServo.write(0);
+else{
+      pixel.clear();
+      pixel.show();
 }
+
+if (inputValue1==1){
+  Serial.printf("BUTTON #2 %i\n", BUTTON1);
+  scentTimer.startTimer(5000);
+  myServo.write(200);
+}
+  if (scentTimer.isTimerReady()) {
+  myServo.write(0);    
+  scentTimer1.startTimer(5000);
+  }
+  if (scentTimer1.isTimerReady()) {
+  myServo.write(100);
+  }  
+  
+  // for(x=0; x<1; x++){
+  //   myServo.write(90);
+  //   delay(1000);
+  // }
+    //  myServo.write(90);
+    //  delay(10);
+    //   myServo.write(180);
+    //   delay(5000);
+    //   myServo.write(0);
+    //   delay(5000);
+    //   myServo.write(180);
+    //   delay(5000);
+    
+
 Adafruit_MQTT_Subscribe *subscription;
   while ((subscription = mqtt.readSubscription(10000))) {
     if (subscription == &buttonFeed) {
       subValue = atoi((char *)buttonFeed.lastread);
       Serial.printf("Button Subscription %i \n", subValue);
     }
-    if (subscription == &scentFeed) {
-      subValue1 = atoi((char *)scentFeed.lastread);
-      Serial.printf("scent Subscription %i \n", subValue1);
-    }
-    
     if(subValue==1){
       for(i=0; i<5; i++){
         randomPixel();
@@ -132,17 +158,36 @@ Adafruit_MQTT_Subscribe *subscription;
       pixel.clear();
       pixel.show();
     }
+    if (subscription == &scentFeed) {
+      subValue1 = atoi((char *)scentFeed.lastread);
+      Serial.printf("scent Subscription %i \n", subValue1);
+    }
     if(subValue1==2){
-       myServo.write(180);
-       delay(1000);
-       myServo.write(0);
+      scentTimer.startTimer(5000);
+      myServo.write(150);
+    }
+    if (scentTimer.isTimerReady()) {
+        scentTimer1.startTimer(5000);
+        myServo.write(100); 
+    }
+    if (scentTimer1.isTimerReady()) {
+        scentTimer2.startTimer(5000);
+        myServo.write(125);
+    }  
+    if (scentTimer2.isTimerReady()) {
+       myServo.write(0);    
+    }
+      //  myServo.write(180);
+      //  delay(5000);
+      //  myServo.write(0);
+      //  delay(5000);
+      //  myServo.write(180);
+      //  delay(5000);
+      //  myServo1.write(15);
       //  delay(1000);
       //  myServo1.write(180);
-      //  delay(1000);
-      //  myServo1.write(25);
     }
   }
-}
 // Function to connect and reconnect as necessary to the MQTT server.
 // Should be called in the loop function and it will take care if connecting.
 void MQTT_connect() {
