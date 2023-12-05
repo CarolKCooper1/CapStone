@@ -46,12 +46,14 @@ const int SERVPIN = D13;
 // int inputValue, inputValue1;
 const int COUNT=5;
 int counter;
+int scentCounter;
 // Button myButton(BUTTON);
 // Button myButton1(BUTTON1);
 Servo myServo;
 IoTTimer scentTimer;
 IoTTimer scentTimer1, scentTimer2;
 Button startButton(D5);
+Button scentButton(D6);
 
 Adafruit_NeoPixel pixel(10, SPI1, WS2812B);
 
@@ -79,7 +81,9 @@ void setup() {
   pixel.show();
 
   pixelTimer.startTimer(1000);
+  scentTimer.startTimer(1000);
   counter=COUNT;
+  scentCounter=COUNT;
 
   WiFi.on();
   WiFi.connect();
@@ -104,34 +108,55 @@ void loop() {
   MQTT_ping();
 
   if(startButton.isClicked()){
-  Serial.printf("button %i \n",startButton);
+  Serial.printf("pixel button is clicked\n");
     counter = 0;
-    pixel.clear();
-    pixel.show();
   }
 
   if(counter<COUNT){
     counter=counter+randomPixel();
   }
+  else{
+    if(pixelTimer.isTimerReady()){
+      pixel.clear();
+      pixel.show();
+  }
+  }
 
-  // inputValue=digitalRead(startButton);
-  // inputValue1=digitalRead(BUTTON1);
+if(scentButton.isClicked()){
+  Serial.printf("scent button is clicked\n");
+  scentCounter=0;
+  scentTimer.startTimer(1);
+}
 
-// if(startButton==1){//turn on lights
-//     counter=0;
-    // for(i=0; i<5; i++){
-    //   randomPixel();
-    //   Serial.printf("BUTTON on %i\n", BUTTON);
-      // delay(LEDDELAY); //Brian approved the use of this delay
-    // }
-      // pixel.clear();
-      // pixel.show();     
-// }
-// else{
-//       pixel.clear();
-//       pixel.show();
-// }
-
+//Serial.printf("Scent Timer = %i\n",scentTimer.isTimerReady());
+if(scentTimer.isTimerReady()) {
+     switch (scentCounter){
+      case 0:
+          Serial.printf("Scent Counter %i\n",scentCounter);
+          myServo.write(150);
+          scentCounter++;
+          scentTimer.startTimer(5000);
+          break;
+      case 1:
+          Serial.printf("Scent Counter %i\n",scentCounter);
+          myServo.write(100);
+          scentCounter++;
+          scentTimer.startTimer(5000);
+          break;
+      case 2:
+          Serial.printf("Scent Counter %i\n",scentCounter);
+          myServo.write(125);
+          scentCounter++;
+          scentTimer.startTimer(5000);
+          break;
+      case 3:
+          Serial.printf("Scent Counter %i\n",scentCounter);
+          myServo.write(10);
+          scentCounter++;
+          scentTimer.startTimer(5000);
+          break;
+      }
+}
 // if (inputValue1==1){
 //   Serial.printf("BUTTON #2 %i\n", BUTTON1);
 //   scentTimer.startTimer(5000);
@@ -160,37 +185,25 @@ void loop() {
     
 
 Adafruit_MQTT_Subscribe *subscription;
-  while ((subscription = mqtt.readSubscription(10000))) {
+  while ((subscription = mqtt.readSubscription(1000))) {
     if (subscription == &buttonFeed) {
       subValue = atoi((char *)buttonFeed.lastread);
       Serial.printf("Button Subscription %i \n", subValue);
     }
     if(subValue==1){
       counter=0;
-      // for(i=0; i<5; i++){
-      //   randomPixel();
-        // delay(LEDDELAY); 
-      pixel.clear();
-      pixel.show();
-      }
-
-    // }
-    // else{
-    //   pixel.clear();
-    //   pixel.show();
     }
-    // if (subscription == &scentFeed) {
-    //   subValue1 = atoi((char *)scentFeed.lastread);
-    //   Serial.printf("scent Subscription %i \n", subValue1);
-    // }
-    // if(subValue1==2){
-    //   scentTimer.startTimer(5000);
-    //   myServo.write(150);
-    // }
-    // if (scentTimer.isTimerReady()) {
-    //     scentTimer1.startTimer(5000);
-    //     myServo.write(100); 
-    // }
+
+    if (subscription == &scentFeed) {
+      subValue1 = atoi((char *)scentFeed.lastread);
+      Serial.printf("scent Subscription %i \n", subValue1);
+    }
+    if(subValue1==2){
+      scentCounter=0;
+      scentTimer.startTimer(1);
+    }
+
+   
     // if (scentTimer1.isTimerReady()) {
     //     scentTimer2.startTimer(5000);
     //     myServo.write(125);
@@ -208,7 +221,7 @@ Adafruit_MQTT_Subscribe *subscription;
       //  delay(1000);
       //  myServo1.write(180);
     }
-  
+}
 // Function to connect and reconnect as necessary to the MQTT server.
 // Should be called in the loop function and it will take care if connecting.
 void MQTT_connect() {
@@ -258,9 +271,7 @@ int randomPixel(){
       Serial.printf("Pixel %i and Color %i \n", whichPix, randColor);
       pixel.setPixelColor(whichPix, rainbow[randColor]);
       pixel.show();
-      pixelTimer.startTimer(1000);
-      // pixel.clear();
-      // pixel.show();
+      pixelTimer.startTimer(5000);
       value=1;
   } 
 
