@@ -19,8 +19,12 @@
 
 
 TCPClient TheClient; 
-IoTTimer lightTimer;
 IoTTimer pixelTimer;
+Servo myServo;
+IoTTimer scentTimer;
+Button startButton(D5);
+Button scentButton(D6);
+Adafruit_NeoPixel pixel(10, SPI1, WS2812B);
 
 // Setup the MQTT client class by passing in the WiFi client and MQTT server and login details. 
 Adafruit_MQTT_SPARK mqtt(&TheClient,AIO_SERVER,AIO_SERVERPORT,AIO_USERNAME,AIO_KEY); 
@@ -32,33 +36,15 @@ Adafruit_MQTT_Subscribe buttonFeed = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME
 Adafruit_MQTT_Subscribe scentFeed = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/scentbutton"); 
 // Let Device OS manage the connection to the Particle Cloud
 
-// int start;
-// int end;
-// int i;
-// int x;
-// const int PIXELCOUNT = 10;
-// const int LEDDELAY = 5000;
-int subValue,subValue1;
-// const int BUTTON=D6;// button
-// const int BUTTON1=D5;
-bool buttonState;
+//variables
 const int SERVPIN = D13;
-// int inputValue, inputValue1;
 const int COUNT=5;
 int counter;
 int scentCounter;
-// Button myButton(BUTTON);
-// Button myButton1(BUTTON1);
-Servo myServo;
-IoTTimer scentTimer;
-IoTTimer scentTimer1, scentTimer2;
-Button startButton(D5);
-Button scentButton(D6);
-
-Adafruit_NeoPixel pixel(10, SPI1, WS2812B);
-
+int subValue,subValue1;
+//functions
 int randomPixel();
-void MQTT_connect();//this is important for next project
+void MQTT_connect();
 bool MQTT_ping();
 
 
@@ -71,11 +57,10 @@ SYSTEM_THREAD(ENABLED);
 // View logs with CLI using 'particle serial monitor --follow'
 SerialLogHandler logHandler(LOG_LEVEL_INFO);
 
-// setup() runs once, when the device is first turned on
 void setup() {
   Serial.begin(9600);
   waitFor(Serial.isConnected,10000);
-//start pixels
+
   pixel.begin();
   pixel.setBrightness(255);
   pixel.show();
@@ -94,24 +79,21 @@ void setup() {
 
   mqtt.subscribe(&buttonFeed);
   mqtt.subscribe(&scentFeed);
-//servo
+
   myServo.attach(SERVPIN);
-  // pinMode(SERVPIN, INPUT_PULLDOWN);
-  //Buttons
-  // pinMode(BUTTON,INPUT);
-  // pinMode(BUTTON1,INPUT);
+
 }
 
-// loop() runs over and over again, as quickly as it can execute.
 void loop() {
   MQTT_connect();
   MQTT_ping();
 
+//buttons to manually start the lights and open the scent box
   if(startButton.isClicked()){
   Serial.printf("pixel button is clicked\n");
     counter = 0;
   }
-
+//counter
   if(counter<COUNT){
     counter=counter+randomPixel();
   }
@@ -128,7 +110,7 @@ if(scentButton.isClicked()){
   scentTimer.startTimer(1);
 }
 
-//Serial.printf("Scent Timer = %i\n",scentTimer.isTimerReady());
+// switch case for servo to move the opening to one side of the box, then the other side of the box and then close
 if(scentTimer.isTimerReady()) {
      switch (scentCounter){
       case 0:
@@ -149,40 +131,8 @@ if(scentTimer.isTimerReady()) {
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
-      // case 3:
-      //     Serial.printf("Scent Counter %i\n",scentCounter);
-      //     myServo.write(10);
-      //     scentCounter++;
-      //     scentTimer.startTimer(5000);
-      //     break;
       }
 }
-// if (inputValue1==1){
-//   Serial.printf("BUTTON #2 %i\n", BUTTON1);
-//   scentTimer.startTimer(5000);
-//   myServo.write(200);
-// }
-//   if (scentTimer.isTimerReady()) {
-//   myServo.write(0);    
-//   scentTimer1.startTimer(5000);
-//   }
-//   if (scentTimer1.isTimerReady()) {
-//   myServo.write(100);
-//   }  
-  
-  // for(x=0; x<1; x++){
-  //   myServo.write(90);
-  //   delay(1000);
-  // }
-    // myServo.write(90);
-    // delay(1000);
-    // myServo.write(180);
-    // delay(1000);
-    // myServo.write(0);
-    // delay(1000);
-    // myServo.write(180);
-    // delay(1000);
-    
 
 Adafruit_MQTT_Subscribe *subscription;
   while ((subscription = mqtt.readSubscription(1000))) {
@@ -203,24 +153,7 @@ Adafruit_MQTT_Subscribe *subscription;
       scentTimer.startTimer(1);
     }
     }
-   
-    // if (scentTimer1.isTimerReady()) {
-    //     scentTimer2.startTimer(5000);
-    //     myServo.write(125);
-    // }  
-    // if (scentTimer2.isTimerReady()) {
-    //    myServo.write(0);    
-    // }
-      //  myServo.write(180);
-      //  delay(5000);
-      //  myServo.write(0);
-      //  delay(5000);
-      //  myServo.write(180);
-      //  delay(5000);
-      //  myServo1.write(15);
-      //  delay(1000);
-      //  myServo1.write(180);
-    }
+}
 }
 // Function to connect and reconnect as necessary to the MQTT server.
 // Should be called in the loop function and it will take care if connecting.
@@ -258,6 +191,7 @@ bool MQTT_ping() {
   }
   return pingStatus;
 }
+// function to return a random color on a random pixel on a timer
 int randomPixel(){
   int whichPix;
   int randColor;
