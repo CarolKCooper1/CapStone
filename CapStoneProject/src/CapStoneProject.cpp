@@ -133,28 +133,28 @@ if(scentTimer.isTimerReady()) {
      switch (scentCounter){
       case 0:
           Serial.printf("Scent Counter %i\n",scentCounter);
-          myServo.write(150);
+          myServo.write(125);
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
       case 1:
           Serial.printf("Scent Counter %i\n",scentCounter);
-          myServo.write(100);
+          myServo.write(10);
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
       case 2:
           Serial.printf("Scent Counter %i\n",scentCounter);
-          myServo.write(125);
+          myServo.write(75);
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
-      case 3:
-          Serial.printf("Scent Counter %i\n",scentCounter);
-          myServo.write(10);
-          scentCounter++;
-          scentTimer.startTimer(5000);
-          break;
+      // case 3:
+      //     Serial.printf("Scent Counter %i\n",scentCounter);
+      //     myServo.write(10);
+      //     scentCounter++;
+      //     scentTimer.startTimer(5000);
+      //     break;
       }
 }
 // if (inputValue1==1){
@@ -189,20 +189,20 @@ Adafruit_MQTT_Subscribe *subscription;
     if (subscription == &buttonFeed) {
       subValue = atoi((char *)buttonFeed.lastread);
       Serial.printf("Button Subscription %i \n", subValue);
-    }
+    
     if(subValue==1){
       counter=0;
     }
-
+    }
     if (subscription == &scentFeed) {
       subValue1 = atoi((char *)scentFeed.lastread);
       Serial.printf("scent Subscription %i \n", subValue1);
-    }
+    
     if(subValue1==2){
       scentCounter=0;
       scentTimer.startTimer(1);
     }
-
+    }
    
     // if (scentTimer1.isTimerReady()) {
     //     scentTimer2.startTimer(5000);
